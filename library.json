@@ -1,0 +1,27 @@
+{
+    "name": "Blinker_PMSX003ST",
+    "description": "Arduino library for Plantower PMSX003ST family sensors.",
+    "keywords": "AQI, PMS",
+    "authors": [
+        {
+            "name": "i3water",
+            "url": "https://github.com/i3water",
+            "maintainer": true
+        }
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/i3water/Blinker_PMSX003ST.git"
+    },
+    "version": "1.0.0",
+    "export": {
+        "exclude": [
+            "tests"
+        ]
+    },
+    "frameworks": "arduino",
+    "platforms": "*",
+    "examples": [
+        "examples/*/*.ino"
+    ]
+}
