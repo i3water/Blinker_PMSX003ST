@@ -68,6 +68,11 @@ int BLINKER_PMSX003ST::read(unsigned long timeout) {
     for (uint8_t num = 0; num < 20; num++) {
         data[num] = buffer[num*2 + 1] << 8 | buffer[num*2];
     }
+
+    PM25 = getPmAto(2.5);
+    PM100 = getPmAto(10);
+    parseAQI();
+
     return true;
 }
 
@@ -111,4 +116,54 @@ unsigned int BLINKER_PMSX003ST::getPmCf1(double pm){
         case 10 : return data[DATA_PM10CF1];
     }
     return 0;
+}
+
+void BLINKER_PMSX003ST::parseAQI() {
+    uint16_t AQI25, AQI100, color;
+    for (uint8_t Bnum = 0; Bnum < 2; Bnum++) {
+    // uint8_t Bnum = 0;
+        AQI25 = 0;
+        AQI100 = 0;
+        for (uint8_t Inum = 1; Inum < 8; Inum++) {
+            if (PM25*10 <= AQIindex[Inum][0+Bnum]) {
+                // IOT_DEBUG_PRINT4(F("Inum: "), Inum, F("Bnum: "), Bnum);
+                // IOT_DEBUG_PRINT2(F("AQIindex[Inum][0+Bnum]: "), AQIindex[Inum][0+Bnum]);
+                AQI25 = ((AQIindex[Inum][4] - AQIindex[Inum-1][4])*(PM25*10 - AQIindex[Inum-1][0+Bnum]) / (AQIindex[Inum][0+Bnum] - AQIindex[Inum - 1][0+Bnum]) + AQIindex[Inum-1][4])/10;
+                color = AQIindex[Inum][5];
+                break;
+            }
+            if (Inum == 7) {
+                AQI25 = 500;
+                color = 5;
+            }
+        }
+        for (uint8_t Inum = 1; Inum < 8; Inum++) {
+            if (PM100*10 <= AQIindex[Inum][2+Bnum]) {
+                // IOT_DEBUG_PRINT4(F("Inum: "), Inum, F("Bnum: "), Bnum);
+                // IOT_DEBUG_PRINT2(F("AQIindex[Inum][0+Bnum]: "), AQIindex[Inum][0+Bnum]);
+                AQI100 = ((AQIindex[Inum][4] - AQIindex[Inum-1][4])*(PM100*10 - AQIindex[Inum-1][2+Bnum]) / (AQIindex[Inum][2+Bnum] - AQIindex[Inum - 1][2+Bnum]) + AQIindex[Inum-1][4])/10;
+                
+                // IOT_DEBUG_PRINT4(F("AQI25: "), AQI25, F("  AQI100: "), AQI100);
+                if(AQI25 >= AQI100) {
+                    // return String(AQI25);
+                    AQIBUFFER[Bnum][AQI_DATA] = AQI25;
+                    AQIBUFFER[Bnum][AQI_LEVEL] = color;
+                    AQIBUFFER[Bnum][AQI_MAIN_POLLUTANT] = POLLUTANT_PM2_5;
+                    break;
+                }
+                else {
+                    AQIBUFFER[Bnum][AQI_DATA] = AQI100;
+                    color = AQIindex[Inum][5];
+                    AQIBUFFER[Bnum][AQI_LEVEL] = color;
+                    AQIBUFFER[Bnum][AQI_MAIN_POLLUTANT] = POLLUTANT_PM10;
+                    break;
+                    // return String(AQI100);
+                }
+            }
+            if (Inum == 7) {
+                AQIBUFFER[Bnum][0] = 500;
+                AQIBUFFER[Bnum][1] = 5;
+            }
+        }
+    }
 }
